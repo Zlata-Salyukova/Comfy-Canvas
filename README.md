@@ -8,6 +8,15 @@ Comfy Canvas is a modern, multi‑layer web canvas that bridges to ComfyUI via a
 
 ---
 
+## Open to Opportunities in AI
+
+I’m **Zlata Salyukova**, the developer behind Comfy Canvas. My work spans Python, JavaScript, Flask, and UI/UX design, with a background that combines technical problem-solving and hands-on project experience.  
+
+I’m interested in roles in the **AI and creative technology field**.  
+You can reach me on X: [@Zlata_Salyukova](https://x.com/Zlata_Salyukova)
+
+---
+
 ## Features
 
 - Fast, multi‑layer editor (PIXI.js) with brush, eraser, lasso, selection, blend modes, opacity, upload, and undo/redo
@@ -49,6 +58,20 @@ Install
   pip install -r requirements.txt
   ```
 
+Optional: use a virtual environment (recommended)
+- Windows (PowerShell):
+  ```powershell
+  python -m venv .venv
+  .\.venv\Scripts\Activate
+  pip install -r requirements.txt
+  ```
+- Linux/macOS:
+  ```bash
+  python3 -m venv .venv
+  source .venv/bin/activate
+  pip install -r requirements.txt
+  ```
+
 ---
 
 ## Quick Start
@@ -66,6 +89,7 @@ Install
      python3 cc_bridge_server.py
      ```
    - Bridge serves the UI at `http://127.0.0.1:8765/` (configurable)
+   - Stop the server: press Ctrl+C in that terminal, or POST `http://127.0.0.1:8765/shutdown`
 3) In ComfyUI, add nodes:
    - “Comfy Canvas – Edit”: wire `IMAGE` to your pipeline input (e.g., VAE encode)
    - Wire `prompt` to `CLIPTextEncode.text` and `negative` to your negative text input
@@ -102,6 +126,7 @@ Legacy env vars (still supported): `LD_BRIDGE_PORT`, `LD_BRIDGE_HOST`, `LD_FRONT
 - `GET /get/output` — image/png of last output (204 if none)
 - `POST /store/trigger` — `{ prompt: { prompt: <graphNodes>, client_id?: <id> } }` (stores payload for autorun)
 - `POST /trigger` — `{ prompt }` (or uses stored payload) → forwards to `${COMFY_URL}/prompt`
+- `POST /shutdown` — stops the bridge (for local/dev use)
 
 Quick test:
 ```bash
@@ -134,10 +159,24 @@ curl http://127.0.0.1:8765/status
 - Output doesn’t appear
   - Verify your pipeline wires the final image into “Comfy Canvas – Output”
   - Confirm `/get/output` returns 200 after a run
+ - Bridge won’t start
+   - Check if port 8765 is in use, or set `CC_BRIDGE_PORT`
+   - Ensure dependencies are installed (`pip install -r requirements.txt`)
+   - Check terminal output for errors
+
+---
+
+## Credits
+
+This project was made possible with the help of the following tools:  
+
+- **GPT-5**  
+- **Codex**  
+- **Cursor**  
+- **Qoder**
 
 ---
 
 ## License
 
-MIT or project’s default — add your preferred license here.
-
+Licensed under the MIT License. See the `LICENSE` file for details.

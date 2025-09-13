@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage*
+coverage.xml
+htmlcov/
+
+# Environments
+.env
+.env.*
+.venv/
+venv/
+env/
+
+# Packaging / build
+build/
+dist/
+*.egg-info/
+
+# Logs / temp
+*.log
+*.tmp
+*.bak
+*.swp
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Node (if used locally)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Cache
+.cache/
+.parcel-cache/
