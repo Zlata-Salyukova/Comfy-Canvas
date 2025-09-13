@@ -17,9 +17,11 @@ You can reach me on X: [@Zlata_Salyukova](https://x.com/Zlata_Salyukova)
 
 ---
 
-## Demo Generation Workflow
+## Demo Generation Video
+Video Demo Link: https://x.com/i/status/1966235731363508601
 <P align="center">
-  <video src="assets/Comfy_Canvas_Generation_Vid.mp4" controls muted loop playsinline width="600"></video>
+  <img src="./assets/comfy_canvas_app_preview.webp" alt="Comfy Canvas App Preview" width="45%">
+  <img src="./assets/comfy_canvas_node_preview.webp" alt="Comfy Canvas App Preview" width="45%">
 </p>
 
 ---
