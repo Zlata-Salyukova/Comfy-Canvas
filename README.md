@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/assets/images/Comfy_Canvas_Banner.png" alt="Comfy Canvas Banner" height="300px">
+  <img src="./assets/Comfy_Canvas_Banner.png" alt="Comfy Canvas Banner" height="300px">
 </p>
 
 # Comfy Canvas (ComfyUI Custom Nodes)
@@ -14,6 +14,13 @@ I’m **Zlata Salyukova**, the developer behind Comfy Canvas. My work spans Pyth
 
 I’m interested in roles in the **AI and creative technology field**.  
 You can reach me on X: [@Zlata_Salyukova](https://x.com/Zlata_Salyukova)
+
+---
+
+## Demo Generation Workflow
+<P align="center">
+  <video src="assets/Comfy_Canvas_Generation_Vid.mp4" controls muted loop playsinline width="600"></video>
+</p>
 
 ---
 
