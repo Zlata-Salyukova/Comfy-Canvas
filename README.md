@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="frontend/assets/images/Comfy_Canvas_Banner.png" alt="Comfy Canvas Banner" height="300px">
+</p>
+
 # Comfy Canvas (ComfyUI Custom Nodes)
 
 Comfy Canvas is a modern, multi‑layer web canvas that bridges to ComfyUI via a lightweight Flask server. It ships two nodes to move images and text between your browser and a running ComfyUI workflow.
