@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Comfy Canvas - Real-time Canvas Editor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Comfy Canvas: Real-time canvas painting and image generation tool powered by WebGPU and AI.">
+  <meta name="keywords" content="canvas, painting, image generation, AI, WebGPU, drawing, art">
+  <meta name="author" content="Comfy Canvas">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <!-- Minimal top loading bar for generation progress -->
+  <div id="ld-progress" aria-hidden="true">
+    <div class="bar"></div>
+  </div>
+  <!-- Skip to main content link for accessibility -->
+  <a href="#main-canvas" class="skip-link" tabindex="1">
+    Skip to main canvas
+  </a>
+
+  <!-- Top navigation bar -->
+  <header class="topbar" role="banner">
+    <h1 class="brand">Comfy Canvas</h1>
+    <div class="undo-redo-controls">
+      <button id="undoBtn" type="button" 
+              class="undo-redo-btn" 
+              title="Undo (Ctrl+Z)" 
+              aria-label="Undo last action"
+              disabled>
+        <svg class="icon" aria-hidden="true"><use href="#undo-redo"></use></svg>
+      </button>
+      <button id="redoBtn" type="button" 
+              class="undo-redo-btn" 
+              title="Redo (Ctrl+Y)" 
+              aria-label="Redo last undone action"
+              disabled>
+        <svg class="icon flipped" aria-hidden="true"><use href="#undo-redo"></use></svg>
+      </button>
+    </div>
+    <input type="color" 
+           id="topbarColor" 
+           class="topbar-color-picker"
+           value="#55cdfc"
+           title="Current color"
+           aria-label="Select drawing color">
+    <button id="uploadBtn" type="button" 
+            class="topbar-btn" 
+            title="Upload image (creates new layer)" 
+            aria-label="Upload image file">
+      <svg class="icon" aria-hidden="true"><use href="#upload"></use></svg>
+    </button>
+    <button id="copyOutputBtn" type="button"
+            class="topbar-btn"
+            title="Copy current output to a new layer"
+            aria-label="Copy current output to a new layer">
+      <svg class="icon" aria-hidden="true"><use href="#copy-output"></use></svg>
+    </button>
+    <input type="file" 
+           id="uploadInput" 
+           accept="image/*" 
+           style="display: none;"
+           aria-hidden="true">
+    <div class="spacer" aria-hidden="true"></div>
+    <nav class="top-actions" role="navigation" aria-label="View controls">
+      <button id="fitBothBtn" type="button" title="Fit both canvases to view (F)" aria-label="Fit both canvases to view">
+        <svg class="icon" aria-hidden="true"><use href="#fit-both"></use></svg>
+      </button>
+      <button id="fitEditorBtn" type="button" title="Fit editor canvas to view" aria-label="Fit editor canvas to view">
+        <svg class="icon" aria-hidden="true"><use href="#fit-editor"></use></svg>
+      </button>
+      <button id="fitOutputBtn" type="button" title="Fit output canvas to view" aria-label="Fit output canvas to view">
+        <svg class="icon" aria-hidden="true"><use href="#fit-output"></use></svg>
+      </button>
+      <button id="swapBtn" type="button" title="Swap editor and output panes" aria-label="Swap editor and output panes">
+        <svg class="icon" aria-hidden="true"><use href="#swap"></use></svg>
+      </button>
+      <button id="downloadBtn" type="button" title="Download output image" aria-label="Download output image">
+        <svg class="icon" aria-hidden="true"><use href="#download"></use></svg>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Tool settings panel (expands from topbar) -->
+  <section id="toolSettings" 
+           class="tool-settings collapsed" 
+           role="region" 
+           aria-label="Tool settings" 
+           aria-live="polite">
+  </section>
+
+  <!-- Main canvas area -->
+  <main id="main-canvas" class="panes" role="main">
+    <section id="leftPane" 
+             class="pane" 
+             role="img" 
+             aria-label="Drawing canvas - Use tools to draw and edit"
+             tabindex="0">
+    </section>
+    
+    <div class="divider" 
+         role="separator" 
+         aria-orientation="vertical" 
+         aria-hidden="true">
+    </div>
+    
+    <section id="rightPane" 
+             class="pane" 
+             role="img" 
+             aria-label="Output canvas - Generated results appear here"
+             tabindex="0">
+    </section>
+  </main>
+
+  <!-- Control panel and prompt interface -->
+  <section class="promptbar" role="region" aria-label="Generation controls">
+    <!-- Options panel (collapsible) -->
+    <div class="options-panel" id="options-panel" hidden>
+      <div class="options-grid">
+      <div class="opt-row">
+        <fieldset class="opt-group" id="canvas-size-group" role="group" aria-labelledby="canvas-size-legend">
+          <legend id="canvas-size-legend" class="sr-only">Canvas size settings</legend>
+          
+          <label class="opt-field" for="cw">
+            Width:
+            <input type="number" 
+                   id="cw" 
+                   min="64" 
+                   max="4096" 
+                   value="1024" 
+                   inputmode="numeric"
+                   aria-describedby="canvas-width-desc">
+          </label>
+          <span id="canvas-width-desc" class="sr-only">Canvas width in pixels</span>
+          
+          <label class="opt-field" for="ch">
+            Height:
+            <input type="number" 
+                   id="ch" 
+                   min="64" 
+                   max="4096" 
+                   value="1024" 
+                   inputmode="numeric"
+                   aria-describedby="canvas-height-desc">
+          </label>
+          <span id="canvas-height-desc" class="sr-only">Canvas height in pixels</span>
+          
+          <button id="resize" 
+                  type="button" 
+                  class="opt-btn"
+                  aria-describedby="resize-desc">
+            Resize
+          </button>
+          <span id="resize-desc" class="sr-only">Apply new canvas dimensions</span>
+        </fieldset>
+      </div>      
+
+      <!-- Strength control row -->
+      <div class="opt-row">
+        <fieldset class="opt-group" id="strength-group" role="group" aria-labelledby="strength-legend">
+          <legend id="strength-legend" class="sr-only">Generation strength</legend>
+
+          <label class="opt-field" for="strength">
+            Strength:
+            <input type="range"
+                   id="strength"
+                   min="0"
+                   max="1"
+                   step="0.01"
+                   value="1"
+                   aria-describedby="strength-desc">
+          </label>
+          <span id="strength-desc" class="sr-only">Controls the strength from 0 to 1</span>
+
+          <label class="opt-field" for="strengthNumber">
+            <span class="sr-only">Strength value</span>
+            <input type="number"
+                   id="strengthNumber"
+                   min="0"
+                   max="1"
+                   step="0.01"
+                   value="1"
+                   inputmode="decimal"
+                   aria-label="Strength numeric value">
+          </label>
+        </fieldset>
+      </div>
+
+      <!-- Seed row (place above negative prompt) -->
+      <div class="opt-row">
+        <fieldset class="opt-group" id="seed-group" role="group" aria-labelledby="seed-legend">
+          <legend id="seed-legend" class="sr-only">Seed</legend>
+          <label class="opt-field" for="seed">
+            Seed:
+            <input type="number"
+                   id="seed"
+                   min="0"
+                   max="999999999999999"
+                   step="1"
+                   value="0"
+                   inputmode="numeric"
+                   aria-label="Random seed value">
+          </label>
+        </fieldset>
+      </div>
+      </div>
+
+      <!-- Negative prompt row (always keep last) -->
+      <div class="opt-row">
+        <fieldset class="opt-group wide" id="negative-group" role="group" aria-labelledby="negative-legend">
+          <legend id="negative-legend" class="sr-only">Negative prompt</legend>
+          <label class="opt-field" for="negative" style="width:100%">
+            <span>Negative:</span>
+            <textarea id="negative"
+                      rows="2"
+                      placeholder="Negative prompt..."
+                      maxlength="1000"
+                      aria-label="Negative prompt"
+                      style="flex:1"></textarea>
+          </label>
+        </fieldset>
+      </div>
+    </div>
+
+    <!-- Main prompt and generation row -->
+    <div class="prompt-row">
+      <button id="options" 
+              type="button"
+              class="icon-btn" 
+              aria-label="Toggle options panel"
+              aria-expanded="false" 
+              aria-controls="options-panel" 
+              title="Options">
+        <span class="hamb" aria-hidden="true"></span>
+      </button>
+      
+      <label for="prompt" class="sr-only">
+        Generation prompt - Describe what you want to generate
+      </label>
+      <textarea id="prompt" 
+                rows="1" 
+                placeholder="Type your prompt here..." 
+                enterkeyhint="go"
+                aria-describedby="prompt-hint"
+                maxlength="1000"></textarea>
+      <div id="prompt-hint" class="sr-only">
+        Enter a description of what you want to generate. Press Enter to generate.
+      </div>
+      
+      <button id="generate" 
+              type="button"
+              class="generate-btn"
+              aria-describedby="generate-desc"
+              title="Generate image">
+        <svg class="icon" aria-hidden="true"><use href="#sparkles"></use></svg>
+      </button>
+      <div id="generate-desc" class="sr-only">
+        Generate image based on current drawing and prompt
+      </div>
+    </div>
+  </section>
+
+  <!-- Floating layers panel -->
+  <aside id="layersPanel" 
+         class="layers-panel" 
+         role="region" 
+         aria-label="Layers management">
+    <div class="layers-inner">
+      <div class="layers-header">
+        <h2 class="layers-title">Layers</h2>
+        <div class="layers-header-buttons">
+          <button type="button"
+                  class="layer-btn"
+                  id="addLayerBtn"
+                  title="Add new layer"
+                  aria-label="Add new layer">
+            <svg class="icon" aria-hidden="true"><use href="#new-layer"></use></svg>
+          </button>
+        </div>
+      </div>
+      
+      <div class="layers-list" id="layersList" role="list">
+        <!-- Layer items will be dynamically generated here -->
+      </div>
+      
+      <div class="layers-controls">
+        <button type="button"
+                class="layer-control-btn"
+                id="deleteLayerBtn"
+                title="Delete selected layer"
+                aria-label="Delete selected layer"
+                disabled>
+          <svg class="icon" aria-hidden="true"><use href="#trash"></use></svg>
+        </button>
+        
+        <button type="button"
+                class="layer-control-btn"
+                id="duplicateLayerBtn"
+                title="Duplicate selected layer"
+                aria-label="Duplicate selected layer">
+          <svg class="icon" aria-hidden="true"><use href="#duplicate"></use></svg>
+        </button>
+
+        <button type="button"
+                class="layer-control-btn"
+                id="mergeDownBtn"
+                title="Merge down (Ctrl+E)"
+                aria-label="Merge down">
+          <svg class="icon" aria-hidden="true"><use href="#merge-down"></use></svg>
+        </button>
+        
+        <select id="blendModeSelect" 
+                class="blend-mode-select"
+                aria-label="Blend mode">
+          <option value="normal">Normal</option>
+          <option value="multiply">Multiply</option>
+          <option value="screen">Screen</option>
+          <option value="overlay">Overlay</option>
+          <option value="darken">Darken</option>
+          <option value="lighten">Lighten</option>
+          <option value="color-dodge">Color Dodge</option>
+          <option value="color-burn">Color Burn</option>
+          <option value="hard-light">Hard Light</option>
+          <option value="soft-light">Soft Light</option>
+          <option value="difference">Difference</option>
+          <option value="exclusion">Exclusion</option>
+        </select>
+      </div>
+
+      <!-- Full-width opacity row below controls -->
+      <div class="layer-opacity-row" id="layerOpacityRow">
+        <input type="range" id="layerOpacityRange" min="0" max="100" value="100" aria-label="Layer opacity" />
+        <div class="layer-opacity-input">
+          <input type="number" id="layerOpacityNumber" min="0" max="100" step="1" value="100" aria-label="Layer opacity percent" />
+          <span class="percent-sign">%</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Minimized layers button (toggles panel visibility) -->
+  <button type="button"
+          id="minimizedLayersBtn"
+          class="minimized-layers-btn"
+          title="Toggle layers panel"
+          aria-label="Toggle layers panel"
+          hidden>
+    <svg class="icon" aria-hidden="true"><use href="#layers"></use></svg>
+  </button>
+
+  <!-- Floating tool palette -->
+  <aside id="floatingToolbar" 
+         class="floating-toolbar" 
+         role="toolbar" 
+         aria-label="Drawing tools">
+    <button type="button"
+            class="tool-btn is-active" 
+            data-tool="brush"   
+            title="Brush tool (B)"
+            aria-label="Brush tool - Press B">
+      <svg class="icon" aria-hidden="true"><use href="#brush"></use></svg>
+    </button>
+    
+    <button type="button"
+            class="tool-btn" 
+            data-tool="eraser"  
+            title="Eraser tool (E)"
+            aria-label="Eraser tool - Press E">
+      <svg class="icon" aria-hidden="true"><use href="#eraser"></use></svg>
+    </button>
+    
+    <button type="button"
+            class="tool-btn" 
+            data-tool="dropper" 
+            title="Color dropper tool (I)"
+            aria-label="Color dropper tool - Press I">
+      <svg class="icon" aria-hidden="true"><use href="#dropper"></use></svg>
+    </button>
+    
+    <button type="button"
+            class="tool-btn" 
+            data-tool="paint-bucket" 
+            title="Paint bucket tool (G)"
+            aria-label="Paint bucket tool - Press G">
+      <svg class="icon" aria-hidden="true"><use href="#paint-bucket"></use></svg>
+    </button>
+    
+    <button type="button"
+            class="tool-btn" 
+            data-tool="marquee" 
+            title="Selection tool (M)"
+            aria-label="Selection tool - Press M">
+      <svg class="icon" aria-hidden="true"><use href="#marquee"></use></svg>
+    </button>
+    
+    <button type="button"
+            class="tool-btn" 
+            data-tool="lasso" 
+            title="Lasso tool (L)"
+            aria-label="Lasso selection tool - Press L">
+      <svg class="icon" aria-hidden="true"><use href="#lasso"></use></svg>
+    </button>
+    
+    <button type="button"
+            class="tool-btn" 
+            data-tool="move"    
+            title="Move tool (V)"
+            aria-label="Move tool - Press V">
+      <svg class="icon" aria-hidden="true"><use href="#move"></use></svg>
+    </button>
+  </aside>
+
+  <!-- Application JavaScript -->
+  <script type="module" src="./main.js"></script>
+
+  <!-- Icon sprite loading -->
+  <script>
+    // Load SVG sprite icons asynchronously
+    (async function loadIcons() {
+      try {
+        const response = await fetch('./assets/icons/sprite.svg');
+        if (!response.ok) {
+          throw new Error(`Failed to load icons: ${response.status}`);
+        }
+      
+        const svgText = await response.text();
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'none';
+        wrapper.setAttribute('aria-hidden', 'true');
+        wrapper.innerHTML = svgText.trim();
+      
+        // Insert the SVG sprite at the beginning of body
+        const svgElement = wrapper.firstElementChild;
+        if (svgElement && svgElement.tagName === 'svg') {
+          document.body.prepend(svgElement);
+        }
+      } catch (error) {
+        console.error('Failed to load icon sprites:', error);
+        // Application will continue to work without icons
+      }
+    })();
+  </script>
+
+  <!-- Screen reader only styles and skip link -->
+  <style>
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 6px;
+      background: var(--blue);
+      color: white;
+      padding: 8px;
+      text-decoration: none;
+      border-radius: 4px;
+      z-index: 1000;
+      transition: top 0.3s;
+    }
+    
+    .skip-link:focus {
+      top: 6px;
+    }
+  </style>
+</body>
+</html>

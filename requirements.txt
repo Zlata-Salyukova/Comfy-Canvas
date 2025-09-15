@@ -1,0 +1,4 @@
+Flask>=3.0.0
+flask-cors>=4.0.0
+requests>=2.32.0
+Pillow>=10.0.0

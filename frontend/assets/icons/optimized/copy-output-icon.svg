@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"
+     xmlns="http://www.w3.org/2000/svg"
+     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="rotate(90 12 12)">
+    <rect x="14" y="4" width="6" height="6"/>
+    <rect x="14" y="14" width="6" height="6"/>
+    <path d="M10 5c-1.591 0-3.117.632-4.243 1.757A6 6 0 0 0 4 11c0 1.591.632 3.117 1.757 4.243A6 6 0 0 0 10 17"/>
+    <path d="m8.396 18.829 2.53-1.44-1.44-2.53"/>
+  </g>
+</svg>

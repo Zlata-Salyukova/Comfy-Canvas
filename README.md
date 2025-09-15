@@ -2,7 +2,7 @@
   <img src="./assets/Comfy_Canvas_Banner.png" alt="Comfy Canvas Banner" height="300px">
 </p>
 
-# Comfy Canvas (ComfyUI Custom Nodes)
+# Comfy Canvas (Beta v0.1.0)
 
 Comfy Canvas is a modern, multi‑layer web canvas that bridges to ComfyUI via a lightweight Flask server. It ships two nodes to move images and text between your browser and a running ComfyUI workflow.
 
@@ -38,16 +38,38 @@ Video Demo Link: https://x.com/i/status/1966235731363508601
 
 ## Node Overview
 
-- Comfy Canvas – Edit (input node)
-  - Outputs (IMAGE, STRING, STRING, FLOAT, INT)
-    - IMAGE: painted canvas
-    - STRING: prompt text
-    - STRING: negative prompt text
-    - FLOAT: strength (0..1, e.g., use as denoise strength)
-    - INT: seed (0..999999999999999)
+<div style="display: flex; align-items: flex-start; margin-bottom: 20px;">
+  <img src="./assets/Comfy_Canvas_Edit-Node.png" alt="Edit Node for Comfy Canvas" height="300px" style="margin-right: 20px;"/>
+  <div>
+    <strong>Comfy Canvas – Edit (input node)</strong>
+    <ul>
+      <li>Outputs (IMAGE, STRING, STRING, FLOAT, INT)</li>
+      <li>IMAGE: painted canvas</li>
+      <li>STRING: prompt text</li>
+      <li>STRING: negative prompt text</li>
+      <li>FLOAT: strength (0..1, e.g., use as denoise strength)</li>
+      <li>INT: seed (0..999999999999999)</li>
+    </ul>
+  </div>
+</div>
 
-- Comfy Canvas – Output (output node)
-  - Accepts an IMAGE and streams it back to the frontend for display
+<div style="display: flex; align-items: flex-start; margin-bottom: 20px;">
+  <img src="./assets/Comfy_Canvas_Output-Node.png" alt="Output Node for Comfy Canvas" height="200px" style="margin-right: 20px;"/>
+  <div>
+    <strong>Comfy Canvas – Output (output node)</strong>
+    <ul>
+      <li>Accepts an IMAGE and streams it back to the frontend for display</li>
+    </ul>
+  </div>
+</div>
+
+---
+
+## Example Workflow using Qwen-Image-Edit
+Connect the Comfy Canvas nodes to your own workflows as you like or start with my workflow to get started. (Image has workflow embedded - Drag and Drop into ComfyUI to get started.)
+<p align="center">
+  <img src="./assets/Comfy_Canvas - Qwen-Image-Edit - Workflow.png" width="100%">
+</p>
 
 ---
 
@@ -172,6 +194,30 @@ curl http://127.0.0.1:8765/status
    - Check if port 8765 is in use, or set `CC_BRIDGE_PORT`
    - Ensure dependencies are installed (`pip install -r requirements.txt`)
    - Check terminal output for errors
+
+---
+
+## To-Do
+
+- [x] - Release (Beta v0.1.0)
+- [ ] - Improve move, rotate, & translate functions
+- [ ] - Better selection functions (Marquee, Lasso)
+- [ ] - Rework (prompt options panel) layout/responsiveness
+- [ ] - **Bug** - *"layer panel doesn't set layer image after new image is uploaded while in the move tool. Pressing new layer sets image to it's layer."*
+- [ ] - Fix Bugs...
+
+### Suggestions & Features to Think About?:
+
+- Try a vector based drawing system?
+  - *"I will think about this but leaning toward no since we already have layers."*
+- **Want:** ctrl + *click layer thumbnail* to select layer pixels.
+  - *"Will be trying to figure this out"*
+-
+
+---
+
+## Version Changelog
+See the full list of version changes in the [CHANGELOG.md](./CHANGELOG.md).
 
 ---
 
