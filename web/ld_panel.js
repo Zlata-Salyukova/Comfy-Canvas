@@ -64,15 +64,25 @@ app.registerExtension({
       async function pushPromptPayloadOnce() {
         try {
           if (typeof app?.graphToPrompt !== 'function') return;
-          const prompt = app.graphToPrompt();
-          if (!prompt) return;
+          const promptPayload = app.graphToPrompt();
+          if (!promptPayload) return;
           const client_id = (app && app.clientId) || (api && api.clientId) || undefined;
+          const payloadPrompt = (promptPayload && typeof promptPayload === 'object' && typeof promptPayload.prompt === 'object')
+            ? promptPayload.prompt
+            : (promptPayload && typeof promptPayload === 'object' ? promptPayload : null);
+          if (!payloadPrompt) return;
+          const payload = { prompt: payloadPrompt };
+          if (promptPayload.extra_data !== undefined) payload.extra_data = promptPayload.extra_data;
+          if (promptPayload.workflow !== undefined) payload.workflow = promptPayload.workflow;
+          if (promptPayload.client_id !== undefined) payload.client_id = promptPayload.client_id;
+          if (client_id) payload.client_id = client_id;
           await fetch(`${BRIDGE}/store/trigger`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(client_id ? { prompt: { prompt, client_id } } : { prompt: { prompt } })
+            body: JSON.stringify({ prompt: payload })
           });
-          await dbg('stored_trigger_payload', { nodes: Object.keys(prompt || {}).length });
+          const nodeCount = Object.keys(payload.prompt || {}).length;
+          await dbg('stored_trigger_payload', { nodes: nodeCount, has_client: !!payload.client_id });
         } catch (e) { await dbg('store_trigger_fail', { error: String(e) }); }
       }
       pushPromptPayloadOnce();

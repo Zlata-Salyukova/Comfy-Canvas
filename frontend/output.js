@@ -112,17 +112,51 @@ export function createOutput(selector, { width = 1024, height = 1024 } = {}) {
   // ---- Comfy bridge polling ----
   let _lastOutputSig = null;
   const BRIDGE = location.origin;
+  async function loadTextureFromBlob(blob){
+    // Robust decode: try ImageBitmap first, then HTMLImageElement, then canvas copy
+    try {
+      const bmp = await createImageBitmap(blob, { colorSpaceConversion: 'default', premultiplyAlpha: 'default' });
+      return { img: bmp, width: bmp.width, height: bmp.height, type: 'bitmap' };
+    } catch (_) {
+      // Fallback to HTMLImageElement
+      try {
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.decoding = 'sync';
+        img.src = url;
+        await img.decode();
+        URL.revokeObjectURL(url);
+        return { img, width: img.naturalWidth || img.width, height: img.naturalHeight || img.height, type: 'image' };
+      } catch (e) {
+        console.warn('[ComfyCanvas] Failed to decode output image', e);
+        throw e;
+      }
+    }
+  }
+
   async function pollOutput(){
     while(true){
       try{
         const r = await fetch(`${BRIDGE}/get/output`, { cache:'no-store' });
         if (r.status===200 && r.headers.get('content-type')?.startsWith('image/')){
           const blob = await r.blob();
-          const bmp  = await createImageBitmap(blob);
-          const tex  = PIXI.Texture.from(bmp);
+          const decoded = await loadTextureFromBlob(blob);
+          // Draw through an offscreen canvas to normalize pixel data
+          let srcCanvas = document.createElement('canvas');
+          srcCanvas.width = decoded.width; srcCanvas.height = decoded.height;
+          try {
+            const ctx = srcCanvas.getContext('2d');
+            ctx.drawImage(decoded.img, 0, 0);
+          } catch {}
+          const tex  = PIXI.Texture.from(srcCanvas);
+          try {
+            tex.baseTexture.wrapMode = PIXI.WRAP_MODES.CLAMP;
+            tex.baseTexture.mipmap = PIXI.MIPMAP_MODES.OFF;
+            tex.baseTexture.scaleMode = PIXI.SCALE_MODES.LINEAR;
+          } catch {}
           const spr  = new PIXI.Sprite(tex);
           // Auto-resize output artboard to match incoming image
-          try { if ((bmp.width && bmp.height) && (bmp.width !== W || bmp.height !== H)) resizeArtboard(bmp.width, bmp.height); } catch {}
+          try { if ((decoded.width && decoded.height) && (decoded.width !== W || decoded.height !== H)) resizeArtboard(decoded.width, decoded.height); } catch {}
           if (app && app.renderer && rt) {
             app.renderer.render(spr, { renderTexture: rt, clear: true });
           }

@@ -310,9 +310,8 @@ function swapPanes(){
     try {
       // Clear any active selection to avoid odd transforms across resize
       if (typeof editor.clearSelection === 'function') editor.clearSelection();
-      // Resize both editor and output artboards to keep borders in sync
+      // Resize ONLY the editor artboard; output artboard resizes to incoming image size automatically
       editor.resizeArtboard(newW, newH);
-      if (typeof output.resizeArtboard === 'function') output.resizeArtboard(newW, newH);
       editor.fitAndCenter();
       output.fitAndCenter();
       // Normalize UI values to what the editor actually set

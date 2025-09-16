@@ -1,7 +1,8 @@
 # ComfyUI/custom_nodes/comfy_canvas/nodes.py
 import os, time, io
-import requests
+import requests, base64
 from PIL import Image
+from PIL import ImageFile
 import torch, numpy as np
 
 PLUGIN_DIR   = os.path.dirname(os.path.abspath(__file__))
@@ -40,10 +41,57 @@ def _tensor_from_pil(img: Image.Image) -> torch.Tensor:
     return torch.from_numpy(arr)[None, ...]  # [1,H,W,3]
 
 def _pil_from_tensor(t: torch.Tensor) -> Image.Image:
-    if t.dim() == 4:
-        t = t[0]
-    arr = (t.clamp(0, 1).cpu().numpy() * 255).astype(np.uint8)
-    return Image.fromarray(arr, "RGB")
+    """Robust tensor -> PIL conversion.
+    Accepts shapes:
+      [B,H,W,3], [H,W,3], [B,3,H,W], [3,H,W],
+      and 4‑channel variants (RGBA) or 1‑channel (grayscale).
+    Ensures channel‑last HWC uint8 for PIL and drops alpha if present.
+    """
+    tt = t.detach()
+    # Remove batch if present
+    if tt.dim() == 4:
+        # [B,...]
+        tt = tt[0]
+    # Ensure channels last
+    if tt.dim() == 3:
+        c_first = tt.shape[0] in (1, 3, 4)
+        c_last  = tt.shape[-1] in (1, 3, 4)
+        if c_first and not c_last:
+            tt = tt.permute(1, 2, 0)  # CHW -> HWC
+    # Now tt is [H,W,C] or [H,W]
+    if tt.dim() == 2:
+        # Grayscale -> RGB
+        tt = tt.unsqueeze(-1).expand(tt.shape[0], tt.shape[1], 3)
+    elif tt.dim() == 3:
+        C = tt.shape[-1]
+        if C == 4:
+            # Drop alpha
+            tt = tt[..., :3]
+        elif C == 1:
+            tt = tt.expand(tt.shape[0], tt.shape[1], 3)
+        elif C != 3:
+            # Unknown channel count: best effort take first 3 or tile last
+            if C > 3:
+                tt = tt[..., :3]
+            else:
+                tt = tt.expand(tt.shape[0], tt.shape[1], 3)
+    # Ensure contiguous before numeric transforms
+    try:
+        if hasattr(tt, 'contiguous'):
+            tt = tt.contiguous()
+    except Exception:
+        pass
+    # Normalize floats 0..1 -> 0..255 (detect 0..255 floats and avoid double scaling)
+    if torch.is_floating_point(tt):
+        tmin = float(tt.min().item()) if hasattr(tt,'min') else 0.0
+        tmax = float(tt.max().item()) if hasattr(tt,'max') else 1.0
+        if tmax <= 1.01:
+            tt = tt.clamp(0.0, 1.0).mul(255.0).round()
+        else:
+            # Assume already 0..255 float
+            tt = tt.clamp(0.0, 255.0).round()
+    arr = tt.to(torch.uint8).cpu().contiguous().numpy()
+    return Image.fromarray(arr, mode="RGB")
 
 # ---- Node 1: Comfy Canvas - Edit ----
 class LD_Edit:
@@ -83,7 +131,6 @@ class LD_Edit:
                 if not wait_for_image:
                     break
             except Exception as e:
-                print(f"Error getting input: {e}")
                 if not wait_for_image:
                     break
             if time.time() > deadline:
@@ -117,8 +164,8 @@ class LD_Edit:
                     seed_val = seed_v
                 except Exception:
                     pass
-        except Exception as e:
-            print(f"Error getting prompt: {e}")
+        except Exception:
+            pass
 
         return (img_tensor, prompt_txt, negative_txt, float(strength_val), int(seed_val))
 
@@ -131,6 +178,12 @@ class LD_Output:
             "required": {
                 "image": ("IMAGE",),
                 "open_frontend": ("BOOLEAN", {"default": False}),
+            },
+            "optional": {
+                # Optional raw image bytes (base64) that, if provided, will be decoded
+                # and re-encoded as a clean PNG before sending. Supports strings like
+                # "data:image/png;base64,..." or plain base64.
+                "image_bytes_b64": ("STRING", {"multiline": False, "default": ""}),
             }
         }
     RETURN_TYPES = ()
@@ -138,13 +191,40 @@ class LD_Output:
     OUTPUT_NODE = True
     CATEGORY = "ComfyCanvas"
 
-    def push_image(self, image, open_frontend):
-        img = _pil_from_tensor(image)
-        buf = io.BytesIO(); img.save(buf, format="PNG")
+    def push_image(self, image, open_frontend, image_bytes_b64=""):
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
+        if isinstance(image_bytes_b64, str) and image_bytes_b64.strip():
+            b64 = image_bytes_b64.strip()
+            if ',' in b64 and ';base64' in b64:
+                b64 = b64.split(',', 1)[1]
+            try:
+                raw = base64.b64decode(b64, validate=False)
+                with Image.open(io.BytesIO(raw)) as _p:
+                    img = _p.convert('RGB')
+            except Exception:
+                img = _pil_from_tensor(image)
+        else:
+            img = _pil_from_tensor(image)
+
+        buf = io.BytesIO()
+        img.save(buf, format="PNG", optimize=False, compress_level=6)
+        png_bytes = buf.getvalue()
+
+        try:
+            if os.environ.get('CC_DUMP_OUTPUT', '').strip() not in ('', '0', 'false', 'False'):
+                dump_dir = os.path.join(os.path.dirname(PLUGIN_DIR), '..', 'user')
+                dump_dir = os.path.abspath(dump_dir)
+                os.makedirs(dump_dir, exist_ok=True)
+                dump_path = os.path.join(dump_dir, f"cc_dump_result_{int(time.time())}.png")
+                with open(dump_path, 'wb') as f:
+                    f.write(png_bytes)
+        except Exception:
+            pass
+
         try:
             requests.post(
                 f"{BRIDGE_URL}/push/output",
-                files={"file": ("result.png", buf.getvalue(), "image/png")},
+                files={"file": ("result.png", png_bytes, "image/png")},
                 timeout=3,
             )
             if open_frontend:
@@ -154,7 +234,7 @@ class LD_Output:
                 except Exception:
                     pass
         except Exception as e:
-            print(f"Error pushing output: {e}")
+            raise RuntimeError(f"Error pushing output: {e}")
         return ()
 
 NODE_CLASS_MAPPINGS = {

@@ -3,6 +3,11 @@
 All notable version changes to Comfy Canvas will be documented in this file.
 
 ---
+## Version [0.1.1] - 2025-09-15
+### Fixed
+- Patched the Comfy Canvas output pipeline so ByteDance Seedream 4.0 responses render with correct RGB values (no more scanlines or greyscale) by normalizing tensors, honoring base64 payloads, and re-encoding PNG output in a single path.
+- Hardened the bridge `/push/output` handler against malformed base64 payloads to avoid delivering stale or partially decoded frames to the canvas.
+
 
 ## Version [0.1.0] - 2025-09-15
 ### Added
