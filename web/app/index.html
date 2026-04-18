@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Comfy Canvas - ComfyUI Overlay Editor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Comfy Canvas: in-app ComfyUI overlay editor for layered image painting and retouching.">
+  <meta name="keywords" content="canvas, painting, image generation, AI, WebGPU, drawing, art">
+  <meta name="author" content="Comfy Canvas">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <!-- Skip to main content link for accessibility -->
+  <a href="#main-canvas" class="skip-link" tabindex="1">
+    Skip to main canvas
+  </a>
+
+  <!-- Top navigation bar -->
+  <header class="topbar" role="banner">
+    <h1 class="brand">Comfy Canvas</h1>
+    <div class="undo-redo-controls">
+      <button id="undoBtn" type="button" 
+              class="undo-redo-btn" 
+              title="Undo (Ctrl+Z)" 
+              aria-label="Undo last action"
+              disabled>
+        <svg class="icon" aria-hidden="true"><use href="#undo-redo"></use></svg>
+      </button>
+      <button id="redoBtn" type="button" 
+              class="undo-redo-btn" 
+              title="Redo (Ctrl+Y)" 
+              aria-label="Redo last undone action"
+              disabled>
+        <svg class="icon flipped" aria-hidden="true"><use href="#undo-redo"></use></svg>
+      </button>
+    </div>
+    <button id="topbarColorBtn" type="button"
+            class="topbar-color-circle"
+            title="Current color"
+            aria-label="Select drawing color">
+    </button>
+    <input type="color"
+           id="topbarColor"
+           class="topbar-color-hidden"
+           value="#55cdfc"
+           aria-hidden="true"
+           tabindex="-1">
+    <button id="uploadBtn" type="button"
+            class="topbar-btn"
+            title="Upload image (creates new layer)"
+            aria-label="Upload image file">
+      <svg class="icon" aria-hidden="true"><use href="#upload"></use></svg>
+    </button>
+    <div class="topbar-spacer-sm" aria-hidden="true"></div>
+    <button id="copyOutputBtn" type="button"
+            class="topbar-btn"
+            title="Copy current output image to a new layer"
+            aria-label="Copy current output image to a new layer"
+            disabled>
+      <svg class="icon" aria-hidden="true"><use href="#copy-output"></use></svg>
+    </button>
+    <input type="file"
+           id="uploadInput"
+           accept="image/*"
+           style="display: none;"
+           aria-hidden="true">
+    <div class="spacer" aria-hidden="true"></div>
+    <nav class="top-actions" role="navigation" aria-label="View controls">
+      <button id="fitBothBtn" type="button" title="Fit both canvases to view (F)" aria-label="Fit both canvases to view">
+        <svg class="icon" aria-hidden="true"><use href="#fit-both"></use></svg>
+      </button>
+      <button id="fitEditorBtn" type="button" title="Fit editor canvas to view" aria-label="Fit editor canvas to view">
+        <svg class="icon" aria-hidden="true"><use href="#fit-editor"></use></svg>
+      </button>
+      <button id="fitOutputBtn" type="button" title="Fit output canvas to view" aria-label="Fit output canvas to view">
+        <svg class="icon" aria-hidden="true"><use href="#fit-output"></use></svg>
+      </button>
+      <button id="swapBtn" type="button" title="Swap editor and output panes" aria-label="Swap editor and output panes">
+        <svg class="icon" aria-hidden="true"><use href="#swap"></use></svg>
+      </button>
+    </nav>
+    <div class="topbar-spacer-lg" aria-hidden="true"></div>
+    <button id="downloadBtn" type="button"
+            class="topbar-btn"
+            title="Download output image"
+            aria-label="Download output image">
+      <svg class="icon" aria-hidden="true"><use href="#download"></use></svg>
+    </button>
+  </header>
+
+  <!-- Tool settings panel (expands from topbar) -->
+  <section id="toolSettings" 
+           class="tool-settings collapsed" 
+           role="region" 
+           aria-label="Tool settings" 
+           aria-live="polite">
+  </section>
+
+  <!-- Main canvas area -->
+  <main id="main-canvas" class="panes" role="main">
+    <section id="leftPane" 
+             class="pane" 
+             role="img" 
+             aria-label="Drawing canvas - Use tools to draw and edit"
+             tabindex="0">
+    </section>
+    
+    <div class="divider" 
+         role="separator" 
+         aria-orientation="vertical" 
+         aria-hidden="true">
+    </div>
+    
+    <section id="rightPane" 
+             class="pane" 
+             role="img" 
+             aria-label="Output canvas - Generated results appear here"
+             tabindex="0">
+    </section>
+  </main>
+
+  <!-- Floating layers panel -->
+  <aside id="layersPanel" 
+         class="layers-panel" 
+         role="region" 
+         aria-label="Layers management">
+    <div class="layers-inner">
+      <div class="layers-header">
+        <h2 class="layers-title">Layers</h2>
+      </div>
+      
+      <div class="layers-list" id="layersList" role="list">
+        <!-- Layer items will be dynamically generated here -->
+      </div>
+      
+      <div class="layers-controls">
+        <button type="button"
+                class="layer-control-btn"
+                id="deleteLayerBtn"
+                title="Delete selected layer"
+                aria-label="Delete selected layer"
+                disabled>
+          <svg class="icon" aria-hidden="true"><use href="#trash"></use></svg>
+        </button>
+        
+        <button type="button"
+                class="layer-control-btn"
+                id="duplicateLayerBtn"
+                title="Duplicate selected layer"
+                aria-label="Duplicate selected layer">
+          <svg class="icon" aria-hidden="true"><use href="#duplicate"></use></svg>
+        </button>
+
+        <button type="button"
+                class="layer-control-btn layer-control-text-btn"
+                id="removeMaskBtn"
+                title="Remove selected layer mask"
+                aria-label="Remove selected layer mask"
+                disabled>
+          <span class="layer-control-text" aria-hidden="true">M-</span>
+        </button>
+
+        <button type="button"
+                class="layer-control-btn"
+                id="addLayerBtn"
+                title="Add new layer"
+                aria-label="Add new layer">
+          <svg class="icon" aria-hidden="true"><use href="#new-layer"></use></svg>
+        </button>
+        
+        <select id="blendModeSelect" 
+                class="blend-mode-select"
+                aria-label="Blend mode">
+          <option value="normal">Normal</option>
+          <option value="multiply">Multiply</option>
+          <option value="screen">Screen</option>
+          <option value="overlay">Overlay</option>
+          <option value="darken">Darken</option>
+          <option value="lighten">Lighten</option>
+          <option value="color-dodge">Color Dodge</option>
+          <option value="color-burn">Color Burn</option>
+          <option value="hard-light">Hard Light</option>
+          <option value="soft-light">Soft Light</option>
+          <option value="difference">Difference</option>
+          <option value="exclusion">Exclusion</option>
+        </select>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Minimized layers button (toggles panel visibility) -->
+  <button type="button"
+          id="minimizedLayersBtn"
+          class="minimized-layers-btn"
+          title="Toggle layers panel"
+          aria-label="Toggle layers panel"
+          hidden>
+    <svg class="icon" aria-hidden="true"><use href="#layers"></use></svg>
+  </button>
+
+  <!-- Floating tool palette -->
+  <aside id="floatingToolbar" 
+         class="floating-toolbar" 
+         role="toolbar" 
+         aria-label="Drawing tools">
+    <button type="button"
+            class="tool-btn is-active" 
+            data-tool="brush"   
+            title="Brush tool (B)"
+            aria-label="Brush tool - Press B">
+      <svg class="icon" aria-hidden="true"><use href="#brush"></use></svg>
+    </button>
+
+    <button type="button"
+            class="tool-btn" 
+            data-tool="eraser"  
+            title="Eraser tool (E)"
+            aria-label="Eraser tool - Press E">
+      <svg class="icon" aria-hidden="true"><use href="#eraser"></use></svg>
+    </button>
+
+    <button type="button"
+            class="tool-btn" 
+            data-tool="dropper" 
+            title="Eyedropper tool (I)"
+            aria-label="Eyedropper tool - Press I">
+      <svg class="icon" aria-hidden="true"><use href="#eyedropper"></use></svg>
+    </button>
+
+    <button type="button"
+            class="tool-btn" 
+            data-tool="paint-bucket" 
+            title="Bucket tool (G)"
+            aria-label="Bucket tool - Press G">
+      <svg class="icon" aria-hidden="true"><use href="#paint-bucket"></use></svg>
+    </button>
+
+    <span class="tool-divider" aria-hidden="true"></span>
+
+    <button type="button"
+            class="tool-btn" 
+            data-tool="marquee" 
+            title="Marquee tool (M)"
+            aria-label="Marquee tool - Press M">
+      <svg class="icon" aria-hidden="true"><use href="#marquee"></use></svg>
+    </button>
+
+    <button type="button"
+            class="tool-btn"
+            data-tool="lasso"
+            title="Lasso tool (L)"
+            aria-label="Lasso tool - Press L">
+      <svg class="icon" aria-hidden="true"><use href="#lasso"></use></svg>
+    </button>
+
+    <button type="button"
+            class="tool-btn"
+            data-tool="magic-wand"
+            title="Magic Wand tool (W)"
+            aria-label="Magic Wand tool - Press W">
+      <svg class="icon" aria-hidden="true"><use href="#magic-wand"></use></svg>
+    </button>
+
+    <button type="button"
+            class="tool-btn"
+            data-tool="pen"
+            title="Pen tool (P)"
+            aria-label="Pen tool - Press P">
+      <svg class="icon" aria-hidden="true"><use href="#pen"></use></svg>
+    </button>
+
+    <span class="tool-divider" aria-hidden="true"></span>
+
+    <button type="button"
+            class="tool-btn" 
+            data-tool="move"    
+            title="Move / Scale / Rotate tool (V)"
+            aria-label="Move, scale, and rotate tool - Press V">
+      <svg class="icon" aria-hidden="true"><use href="#move"></use></svg>
+    </button>
+
+    <button type="button"
+            class="tool-btn"
+            data-tool="text"
+            title="Text tool (T)"
+            aria-label="Text tool - Press T">
+      <svg class="icon" aria-hidden="true"><use href="#text-tool"></use></svg>
+    </button>
+  </aside>
+
+  <section id="promptDock"
+           class="prompt-dock"
+           role="group"
+           aria-label="Prompt and run controls">
+    <label class="sr-only" for="prompt">Generation prompt</label>
+    <div class="prompt-dock-inner">
+      <div class="prompt-input-wrap">
+        <textarea id="prompt"
+                  class="prompt-input"
+                  rows="1"
+                  placeholder="Describe the next generation..."
+                  spellcheck="false"></textarea>
+      </div>
+      <button id="runPromptBtn"
+              type="button"
+              class="prompt-run-btn"
+              title="Run current workflow"
+              aria-label="Run current workflow">
+        <svg class="icon" aria-hidden="true"><use href="#sparkles"></use></svg>
+      </button>
+    </div>
+    <div id="promptDockStatus" class="prompt-dock-status" aria-live="polite"></div>
+  </section>
+
+  <script>
+    window.comfyCanvasBoot = { error: null };
+    window.addEventListener('error', (event) => {
+      window.comfyCanvasBoot.error = event?.message || 'Comfy Canvas boot failed';
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      const reason = event?.reason;
+      window.comfyCanvasBoot.error = reason?.message || String(reason || 'Comfy Canvas boot failed');
+    });
+  </script>
+
+  <!-- Application JavaScript -->
+  <script type="module" src="./src/main.js?v=20260410a"></script>
+
+  <!-- Icon sprite loading -->
+  <script>
+    // Load SVG sprite icons asynchronously
+    (async function loadIcons() {
+      try {
+        const response = await fetch('./assets/icons/sprite.svg?v=20260418a');
+        if (!response.ok) {
+          throw new Error(`Failed to load icons: ${response.status}`);
+        }
+        
+        const svgText = await response.text();
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'none';
+        wrapper.setAttribute('aria-hidden', 'true');
+        wrapper.innerHTML = svgText.trim();
+        
+        // Insert the SVG sprite at the beginning of body
+        const svgElement = wrapper.firstElementChild;
+        if (svgElement && svgElement.tagName === 'svg') {
+          document.body.prepend(svgElement);
+        }
+      } catch (error) {
+        console.error('Failed to load icon sprites:', error);
+        // Application will continue to work without icons
+      }
+    })();
+  </script>
+
+  <!-- Screen reader only styles and skip link -->
+  <style>
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 6px;
+      background: var(--blue);
+      color: white;
+      padding: 8px;
+      text-decoration: none;
+      border-radius: 4px;
+      z-index: 1000;
+      transition: top 0.3s;
+    }
+    
+    .skip-link:focus {
+      top: 6px;
+    }
+  </style>
+</body>
+</html>
+
+
