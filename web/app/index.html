@@ -65,18 +65,21 @@
            style="display: none;"
            aria-hidden="true">
     <div class="spacer" aria-hidden="true"></div>
-    <nav class="top-actions" role="navigation" aria-label="View controls">
-      <button id="fitBothBtn" type="button" title="Fit both canvases to view (F)" aria-label="Fit both canvases to view">
-        <svg class="icon" aria-hidden="true"><use href="#fit-both"></use></svg>
+    <nav class="top-actions" role="navigation" aria-label="View controls" style="display: flex; gap: 6px; align-items: center;">
+      <button id="togglePromptBtn" type="button" title="Toggle Prompt Dock Visibility" aria-label="Toggle Prompt Dock Visibility">
+        <svg class="icon" aria-hidden="true"><use href="#sparkles"></use></svg>
       </button>
-      <button id="fitEditorBtn" type="button" title="Fit editor canvas to view" aria-label="Fit editor canvas to view">
-        <svg class="icon" aria-hidden="true"><use href="#fit-editor"></use></svg>
+      <button id="fitBothBtn" type="button" title="Fit both canvases to view (F)" style="font-size: 11px; font-weight: bold; width: auto; padding: 0 8px; background: #222; border-color: var(--blue);">
+        🌓 雙畫布
       </button>
-      <button id="fitOutputBtn" type="button" title="Fit output canvas to view" aria-label="Fit output canvas to view">
-        <svg class="icon" aria-hidden="true"><use href="#fit-output"></use></svg>
+      <button id="fitEditorBtn" type="button" title="Fit editor canvas to view" style="font-size: 11px; font-weight: bold; width: auto; padding: 0 8px; background: #222; border-color: var(--blue);">
+        左滿版
       </button>
-      <button id="swapBtn" type="button" title="Swap editor and output panes" aria-label="Swap editor and output panes">
-        <svg class="icon" aria-hidden="true"><use href="#swap"></use></svg>
+      <button id="fitOutputBtn" type="button" title="Fit output canvas to view" style="font-size: 11px; font-weight: bold; width: auto; padding: 0 8px; background: #222; border-color: var(--blue);">
+        右滿版
+      </button>
+      <button id="swapBtn" type="button" title="Swap editor and output panes" style="font-size: 11px; font-weight: bold; width: auto; padding: 0 8px; background: #222; border-color: var(--blue);">
+        🔄 交換
       </button>
     </nav>
     <div class="topbar-spacer-lg" aria-hidden="true"></div>
@@ -372,7 +375,32 @@
     .skip-link:focus {
       top: 6px;
     }
+	/* 功能 1 樣式：隱藏底部提示詞框 */
+    .prompt-dock.hidden {
+      display: none !important;
+    }
+    
+    /* 功能 2 樣式：左側畫布單獨滿版 */
+    .panes.single-left #rightPane,
+    .panes.single-left .divider {
+      display: none !important;
+    }
+    .panes.single-left #leftPane {
+      width: 100% !important;
+      flex: 1 1 100% !important;
+    }
+    
+    /* 功能 2 樣式：右側畫布單獨滿版 */
+    .panes.single-right #leftPane,
+    .panes.single-right .divider {
+      display: none !important;
+    }
+    .panes.single-right #rightPane {
+      width: 100% !important;
+      flex: 1 1 100% !important;
+    }
   </style>
+  <script type="module" src="./src/main.js?v=20260410a"></script>
 </body>
 </html>
 

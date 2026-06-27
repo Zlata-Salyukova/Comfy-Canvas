@@ -2555,22 +2555,49 @@ setActiveTool('brush');
 resetUndoHistory('Initial state');
 
 // ========== VIEW CONTROLS ==========
-// Fit and center controls
-document.getElementById('fitBothBtn').addEventListener('click', () => {
-  editor.fitAndCenter();
-  output.fitAndCenter();
+// 功能 1：點擊切換底部提示詞框的顯示與隱藏
+document.getElementById('togglePromptBtn')?.addEventListener('click', () => {
+  const promptDock = document.getElementById('promptDock');
+  if (promptDock) {
+    promptDock.classList.toggle('hidden');
+    // 給予瀏覽器時間重新渲染佈局後再計算適應畫面
+    setTimeout(() => {
+      editor?.fitAndCenter?.();
+      output?.fitAndCenter?.();
+    }, 60);
+  }
 });
 
-document.getElementById('fitEditorBtn').addEventListener('click', () => {
-  editor.fitAndCenter();
+// 功能 2：修改檢視適應按鈕，實現單一畫布滿版置中
+document.getElementById('fitBothBtn')?.addEventListener('click', () => {
+  const panes = document.querySelector('.panes');
+  panes?.classList.remove('single-left', 'single-right'); // 恢復雙畫布
+  setTimeout(() => {
+    editor?.fitAndCenter?.();
+    output?.fitAndCenter?.();
+  }, 60);
 });
 
-document.getElementById('fitOutputBtn').addEventListener('click', () => {
-  output.fitAndCenter();
+document.getElementById('fitEditorBtn')?.addEventListener('click', () => {
+  const panes = document.querySelector('.panes');
+  panes?.classList.remove('single-right');
+  panes?.classList.add('single-left'); // 隱藏右畫布，左畫布 100% 寬
+  setTimeout(() => {
+    editor?.fitAndCenter?.();
+  }, 60);
+});
+
+document.getElementById('fitOutputBtn')?.addEventListener('click', () => {
+  const panes = document.querySelector('.panes');
+  panes?.classList.remove('single-left');
+  panes?.classList.add('single-right'); // 隱藏左畫布，右畫布 100% 寬
+  setTimeout(() => {
+    output?.fitAndCenter?.();
+  }, 60);
 });
 
 // Swap panes functionality
-document.getElementById('swapBtn').addEventListener('click', () => {
+document.getElementById('swapBtn')?.addEventListener('click', () => {
   swapPanes();
 });
 
