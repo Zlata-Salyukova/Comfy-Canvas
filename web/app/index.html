@@ -65,21 +65,21 @@
            style="display: none;"
            aria-hidden="true">
     <div class="spacer" aria-hidden="true"></div>
-    <nav class="top-actions" role="navigation" aria-label="View controls">
-	  <button id="togglePromptBtn" type="button" title="Toggle Prompt Dock Visibility" aria-label="Toggle Prompt Dock Visibility">
+    <nav class="top-actions" role="navigation" aria-label="View controls" style="display: flex; gap: 6px; align-items: center;">
+      <button id="togglePromptBtn" type="button" title="Toggle Prompt Dock Visibility" aria-label="Toggle Prompt Dock Visibility">
         <svg class="icon" aria-hidden="true"><use href="#sparkles"></use></svg>
       </button>
-      <button id="fitBothBtn" type="button" title="Fit both canvases to view (F)" aria-label="Fit both canvases to view">
-        <svg class="icon" aria-hidden="true"><use href="#fit-both"></use></svg>
+      <button id="fitBothBtn" type="button" title="Fit both canvases to view (F)" style="font-size: 11px; font-weight: bold; width: auto; padding: 0 8px; background: #222; border-color: var(--blue);">
+        🌓 雙畫布
       </button>
-      <button id="fitEditorBtn" type="button" title="Fit editor canvas to view" aria-label="Fit editor canvas to view">
-        <svg class="icon" aria-hidden="true"><use href="#fit-editor"></use></svg>
+      <button id="fitEditorBtn" type="button" title="Fit editor canvas to view" style="font-size: 11px; font-weight: bold; width: auto; padding: 0 8px; background: #222; border-color: var(--blue);">
+        左滿版
       </button>
-      <button id="fitOutputBtn" type="button" title="Fit output canvas to view" aria-label="Fit output canvas to view">
-        <svg class="icon" aria-hidden="true"><use href="#fit-output"></use></svg>
+      <button id="fitOutputBtn" type="button" title="Fit output canvas to view" style="font-size: 11px; font-weight: bold; width: auto; padding: 0 8px; background: #222; border-color: var(--blue);">
+        右滿版
       </button>
-      <button id="swapBtn" type="button" title="Swap editor and output panes" aria-label="Swap editor and output panes">
-        <svg class="icon" aria-hidden="true"><use href="#swap"></use></svg>
+      <button id="swapBtn" type="button" title="Swap editor and output panes" style="font-size: 11px; font-weight: bold; width: auto; padding: 0 8px; background: #222; border-color: var(--blue);">
+        🔄 交換
       </button>
     </nav>
     <div class="topbar-spacer-lg" aria-hidden="true"></div>
@@ -400,6 +400,7 @@
       flex: 1 1 100% !important;
     }
   </style>
+  <script type="module" src="./src/main.js?v=20260410a"></script>
 </body>
 </html>
 

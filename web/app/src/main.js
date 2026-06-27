@@ -2560,41 +2560,44 @@ document.getElementById('togglePromptBtn')?.addEventListener('click', () => {
   const promptDock = document.getElementById('promptDock');
   if (promptDock) {
     promptDock.classList.toggle('hidden');
-    // 隱藏或顯示後畫布可用高度改變，重新置中計算
-    editor.fitAndCenter();
-    output.fitAndCenter();
+    // 給予瀏覽器時間重新渲染佈局後再計算適應畫面
+    setTimeout(() => {
+      editor?.fitAndCenter?.();
+      output?.fitAndCenter?.();
+    }, 60);
   }
 });
 
 // 功能 2：修改檢視適應按鈕，實現單一畫布滿版置中
-document.getElementById('fitBothBtn').addEventListener('click', () => {
+document.getElementById('fitBothBtn')?.addEventListener('click', () => {
   const panes = document.querySelector('.panes');
   panes?.classList.remove('single-left', 'single-right'); // 恢復雙畫布
-  editor.fitAndCenter();
-  output.fitAndCenter();
+  setTimeout(() => {
+    editor?.fitAndCenter?.();
+    output?.fitAndCenter?.();
+  }, 60);
 });
 
-document.getElementById('fitEditorBtn').addEventListener('click', () => {
+document.getElementById('fitEditorBtn')?.addEventListener('click', () => {
   const panes = document.querySelector('.panes');
   panes?.classList.remove('single-right');
   panes?.classList.add('single-left'); // 隱藏右畫布，左畫布 100% 寬
-  // 給予 50ms 延遲讓瀏覽器 DOM 重新計算滿版寬度後，再執行置中
   setTimeout(() => {
-    editor.fitAndCenter();
-  }, 50);
+    editor?.fitAndCenter?.();
+  }, 60);
 });
 
-document.getElementById('fitOutputBtn').addEventListener('click', () => {
+document.getElementById('fitOutputBtn')?.addEventListener('click', () => {
   const panes = document.querySelector('.panes');
   panes?.classList.remove('single-left');
   panes?.classList.add('single-right'); // 隱藏左畫布，右畫布 100% 寬
   setTimeout(() => {
-    output.fitAndCenter();
-  }, 50);
+    output?.fitAndCenter?.();
+  }, 60);
 });
 
 // Swap panes functionality
-document.getElementById('swapBtn').addEventListener('click', () => {
+document.getElementById('swapBtn')?.addEventListener('click', () => {
   swapPanes();
 });
 
