@@ -57,7 +57,7 @@ function ensureSessionId(node) {
   if (!widget.value) {
     widget.value = crypto?.randomUUID?.() ?? `comfy-canvas-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   }
-  hideWidget(widget);
+  //hideWidget(widget);
   return `${widget.value}`;
 }
 
